@@ -20,38 +20,29 @@ pipeline {
                     terraform init -reconfigure
                     terraform plan -out=tfplan
                     '''
-
                 }
             } 
         }
     
-        // stage('Apply') {
-        //      when {
-        //         expression { params.ACTION == 'apply' }
-        //     }
-        //     steps {
-        //         withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
-        //             sh ''' 
-        //                cd 00-vpc
-        //                terraform apply -auto-approve tfplan
-        //             '''
-        //         }
-        //     } 
-        // }
-        // stage('Destroy') {
-        //     when {
-        //         expression { params.ACTION == 'destroy' }
-        //     }
-        //     steps {
-        //         withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
-        //             sh '''
-        //             cd 00-vpc
-        //             terraform destroy -auto-approve
-        //             '''
-        //         }
-        //     }
-        // }
-    
+        stage('Apply or Destroy') {
+          
+            steps {
+                withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
+
+                    script {
+                        def command = params.ACTION == 'apply' 
+                        ? 'terraform apply -auto-approve tfplan' 
+                        : 'terraform destroy -auto-approve'
+
+                        sh """
+                            cd 00-vpc
+                            echo 'Executing ${params.ACTION} operation'
+                            ${command}
+                        """
+                    }
+                }
+            } 
+        }  
         
     }
        
