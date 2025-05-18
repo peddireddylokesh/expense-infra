@@ -31,22 +31,31 @@ pipeline {
             }
           
             steps {
-                withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
-
-                    script {
-                        def command = params.ACTION == 'apply' 
-                        ? 'terraform apply -auto-approve tfplan' 
-                        : 'terraform destroy -auto-approve'
-
+                withAWS(region: 'us-east-1', credentials: 'aws-credentials') {                 
                         sh """
-                            cd 10-sg
-                            echo 'Executing ${params.ACTION} operation'
-                            ${command}
+                            cd 00-vpc
+                           if [ ${params.ACTION} == 'apply' ]; 
+                           then
+                                terraform apply -auto-approve tfplan
+                            elif [ ${params.ACTION} == 'destroy' ];
+                            then
+                                terraform destroy -auto-approve
+                            fi
                         """
-                    }
+                    
                 }
             } 
-        }  
+        } 
+        
+        stage('Destroy VPC') {
+            when {
+                expression { params.ACTION == 'destroy' }
+            }
+            steps {
+                build job: '00-vpc', parameters: [string(name: 'ACTION', value: "destroy")], wait: false
+
+            }
+        } 
         
     }
        
