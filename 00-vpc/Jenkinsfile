@@ -9,15 +9,15 @@ pipeline {
     }
     parameters {
     
-        choice(name: 'ACTION', choices: ['apply', 'destroy'], description: 'select an action')
+        choice(name: 'ACTION', choices: ['apply', 'destroy'], description: 'select terraform action')
     }
     stages {                               
         stage('Init') {
             steps {
-                sh """
+                sh '''
                     cd 00-vpc
                     terraform init --reconfigure
-                """
+                '''
             }
         }
         stage('Plan') {
@@ -28,14 +28,31 @@ pipeline {
 
                 }
             } 
-        }
+        // }
         // stage('Apply') {
         //      when {
-        //         expression { env.GIT_BRANCH = 'origin/main'}
+        //         expression { params.ACTION == 'apply' }
         //     }
         //     steps {
-        //         sh "echo 'This is Deploying...'"
-        //         // error "This is error in the Deploy stage"
+        //         withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
+        //             sh ''' 
+        //                cd 00-vpc
+        //                terraform apply -auto-approve tfplan
+        //             '''
+        //         }
+        //     } 
+        // }
+        // stage('Destroy') {
+        //     when {
+        //         expression { params.ACTION == 'destroy' }
+        //     }
+        //     steps {
+        //         withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
+        //             sh '''
+        //             cd 00-vpc
+        //             terraform destroy -auto-approve
+        //             '''
+        //         }
         //     }
         // }
     
