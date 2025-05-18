@@ -31,25 +31,24 @@ pipeline {
             }
           
             steps {
-                withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
-
-                    script {
-                        def command = params.ACTION == 'apply' 
-                        ? 'terraform apply -auto-approve tfplan' 
-                        : 'terraform destroy -auto-approve'
-
+                withAWS(region: 'us-east-1', credentials: 'aws-credentials') {                 
                         sh """
                             cd 00-vpc
-                            echo 'Executing ${params.ACTION} operation'
-                            ${command}
+                           if [ ${params.ACTION} == 'apply' ]; 
+                           then
+                                terraform apply -auto-approve tfplan
+                            elif [ ${params.ACTION} == 'destroy' ];
+                            then
+                                terraform destroy -auto-approve
+                            fi
                         """
-                    }
+                    
                 }
             } 
         } 
         stage('Trigger SG Pipeline') {
             steps {
-                build job: 'expense-infra/10-sg', parameters: [string(name: 'ACTION', value: "${params.ACTION}")]
+                build job: '10-sg', parameters: [[$class: 'ExtendedChoiceParameterValue',name: 'ACTION', value: "apply"]]
 
             }
         }
