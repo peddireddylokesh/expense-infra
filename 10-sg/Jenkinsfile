@@ -16,7 +16,7 @@ pipeline {
              steps {
                 withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
                     sh '''
-                    cd 00-vpc
+                    cd 10-sg
                     terraform init -reconfigure
                     terraform plan -out=tfplan
                     '''
@@ -39,18 +39,14 @@ pipeline {
                         : 'terraform destroy -auto-approve'
 
                         sh """
-                            cd 00-vpc
+                            cd 10-sg
                             echo 'Executing ${params.ACTION} operation'
                             ${command}
                         """
                     }
                 }
             } 
-        } 
-        stage('Trigger SG Pipeline') {
-            build job: 'expense-infra/10-sg', parameters: [string(name: 'ACTION', value: "${params.ACTION}")]
-                
-        }
+        }  
         
     }
        
