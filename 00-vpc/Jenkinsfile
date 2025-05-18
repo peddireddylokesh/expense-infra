@@ -48,10 +48,12 @@ pipeline {
             } 
         } 
         stage('Trigger SG Pipeline') {
-            build job: 'expense-infra/10-sg', parameters: [string(name: 'ACTION', value: "${params.ACTION}")]
-                
+            steps {
+                build job: 'expense-infra/10-sg', parameters: [string(name: 'ACTION', value: "${params.ACTION}")]
+
+            }
         }
-        
+                                
     }
        
 
