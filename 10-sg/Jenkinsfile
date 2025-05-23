@@ -24,51 +24,40 @@ pipeline {
             } 
         }
     
-        stage('Apply or Destroy') {
-            input {
-                message "Do you want to ${params.ACTION} the infrastructure?"
-                ok 'Yes'
-            }
-          
+        stage('Apply') {
             steps {
                 withAWS(region: 'us-east-1', credentials: 'aws-credentials') {                 
-                        sh """
-                            cd 10-sg
-                           if [ ${params.ACTION} == 'apply' ]; 
-                           then
-                                terraform apply -auto-approve tfplan
-                            elif [ ${params.ACTION} == 'destroy' ];
-                            then
-                                terraform destroy -auto-approve
-                            fi
-                        """
-                    
+                    sh """
+                        cd 10-sg
+                        terraform apply -auto-approve
+                    """ 
                 }
             } 
         } 
         
-        stage('Destroy VPC') {
-            when {
-                expression { params.ACTION == 'destroy' }
-            }
-            steps {
-                build job: '00-vpc', parameters: [string(name: 'ACTION', value: "destroy")], wait: false
-
-            }
-        } 
         stage('Parallel In Sequential') {
             when {
                 expression { params.ACTION == 'apply' }
             }
             parallel {
-                stage('Bastion') {
+                stage('20-bastion') {
                     steps {
                         build job: '20-bastion', parameters: [string(name: 'ACTION', value: "apply")], wait: false
                     }
                 }
-                stage('EKS') {
+                 stage('40-rds') {
+                    steps {
+                        build job: '40-rds', parameters: [string(name: 'ACTION', value: 'apply')], wait: false
+                    }
+                }
+                stage('40-eks') {
                     steps {
                         build job: '40-eks', parameters: [string(name: 'ACTION', value: "apply")], wait: false
+                    }
+                }
+                stage('50-ecr') {
+                    steps {
+                        build job: '50-ecr', parameters: [string(name: 'ACTION', value: "apply")], wait: false
                     }
                 }
             }

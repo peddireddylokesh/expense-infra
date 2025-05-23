@@ -16,7 +16,7 @@ pipeline {
              steps {
                 withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
                     sh '''
-                    cd 20-bastion
+                    cd 40-rds
                     terraform init -reconfigure
                     terraform plan -out=tfplan
                     '''
@@ -29,7 +29,7 @@ pipeline {
             steps {
                 withAWS(region: 'us-east-1', credentials: 'aws-credentials') {                 
                     sh """
-                        cd 20-bastion
+                        cd 40-rds
                         terraform destroy -auto-approve
                     """
                     
