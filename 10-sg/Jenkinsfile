@@ -63,25 +63,21 @@ pipeline {
             }
         }
         
-        // stage('Sequential') {
-        //     environment {
-        //         FOR_SEQUENTIAL = "some-value"
-        //     }
-        //     stages {
-        //         stage('In Sequential 1') {
-        //             steps {
-        //                 echo "In Sequential 1"
-        //             }
-        //         }
-        //         stage('In Sequential 2') {
-        //             steps {
-        //                 echo "In Sequential 2"
-        //             }
-                
-        //         }
-        //     }
-        // } 
-        
+        stage('Sequential') {
+          
+            stages {
+                stage('60-acm') {
+                    steps {
+                        build job: '60-acm', parameters: [string(name: 'ACTION', value: "apply")], wait: false
+                    }
+                }
+                stage('70-ingress-alb') {
+                    steps {
+                        build job: '70-ingress-alb', parameters: [string(name: 'ACTION', value: "apply")], wait: false
+                    }
+                }
+            }
+        }   
     }
        
 
