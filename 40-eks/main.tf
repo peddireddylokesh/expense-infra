@@ -1,6 +1,6 @@
 resource "aws_key_pair" "eks" {
   key_name   = "expense-eks"
-  public_key = file("/Users/lokeshpeddireddy999/.ssh/eks.pub")
+  public_key = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCm/jg5kmY2AILxpU9JHqh7ZZqrXTDmuhKrqpaO5bWB5CnOVvif8uQjtuMLuodQwMseZJXG0iK7Wp+nTEbD/9UHqvxoF21rvvDMlfdjbhlHvHurWujecSDTjrHN3kkfGV/Zc4FeeDVufNL38hiO2xOmPaKEJD+/4lUWM37DqVMySyJazY0lEbsWvK1U7CMerp01VFMlxbBkJx6t4PLw3Yf6h2rpN0GeP7FLMNgJBTPGQhfNUuU4NfTkeX4WccVs/rN5PMuJtsdhNhkHtZC7ooSv+kTz7FZz68SJfudux/txdWBCf7vPbU0lPMota/OxMY+jqXlYqddzRNDjPBK0wcUmJAxmQBI060rjiXGOoySRyYg1du/a+/KmBdcXfz8fhtEwctRd/kcMHBsK6IqUMvW2lHOU8XT+LXLZexvFTKhHd6diEbhgkVS4bNUomi2ZZ1bqvmc5tpQDpr0FH7GGx++20R5u48NPkPZycIj69tohoFpAkn0MbglFvoSZ+s5QnjR/W9BkLi/tqrzPKb2IRp4XJ1POtJbxfoDVHHXalzkktmPXgswHm2sJtiIe3++AxqI59WbNJWijaxQhZFUVewk7flVzwdcquZKzSz5vgj5sfRiyfc3x2RQYcHu2KfTqJO+q09o+115uiq0L0BhUAad69oJTKbEwiZowDkp3hHvbXQ== eks-key"
 }
 
 module "eks" {
