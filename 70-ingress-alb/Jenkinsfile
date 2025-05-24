@@ -40,7 +40,7 @@ pipeline {
             }
         }
 
-        stage('Destroy Infra - below ALB') {
+        stage('Destroy Infra - below ALB ') {
             when {
                 expression { params.ACTION == 'destroy' }
             }
