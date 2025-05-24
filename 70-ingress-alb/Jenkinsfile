@@ -48,6 +48,7 @@ pipeline {
                 script {
                     withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
                         def modulesToDestroy = [
+                            "70-ingress-alb",
                             "60-acm",
                             "50-ecr",
                             "40-eks",
