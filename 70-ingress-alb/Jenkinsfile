@@ -36,6 +36,24 @@ pipeline {
                 }
             } 
         } 
+        stage('Destroy infra') {
+           
+            steps {
+                script{
+                    withAWS(region: 'us-east-1', credentials: 'aws-credentials') {                 
+                       def list = ["60-acm","50-ecr","40-eks","40-rds","20-bastion","10-sg","00-vpc"]
+                        for(item in list){
+                            sh """
+                                cd ${item}
+                                terraform init -reconfigure
+                                terraform destroy -auto-approve
+                            """
+                            echo "Destroyed infra in ${item}"
+                        }
+                    }
+                }
+            } 
+        } 
         
     }
        
