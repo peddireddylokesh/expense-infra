@@ -2,63 +2,63 @@ pipeline {
     agent {
         label 'AGENT-1'
     }
-    options{
+
+    options {
         timeout(time: 30, unit: 'MINUTES')
         disableConcurrentBuilds()
         ansiColor('xterm')
     }
-    // environment {
-    //     DEBUG = 'true'
-    // }
 
     parameters {
         choice(name: 'ACTION', choices: ['apply', 'destroy'], description: 'Select Action')
     }
+
     stages {
         stage('Init and Plan') {
             steps {
                 withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
-                    sh """
+                    sh '''
                         cd 70-ingress-alb
                         terraform init -reconfigure
                         terraform plan -out=tfplan
-                    """
+                    '''
                 }
             }
         }
 
         stage('Apply or Destroy') {
-            /* input {
-                message "Should we continue to ${params.ACTION}"
-                ok "Yes, we should."
-            } */
+            // Uncomment below block if you want manual approval before proceeding
+            /*
+            input {
+                message "Should we continue to ${params.ACTION}?"
+                ok "Yes, proceed"
+            }
+            */
             steps {
                 withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
-                    sh """
+                    sh '''
                         cd 70-ingress-alb
-                        if [ ${params.ACTION} == 'apply' ]
-                        then
+                        if [ "${ACTION}" = "apply" ]; then
                             terraform apply -auto-approve tfplan
-                        elif [ ${params.ACTION} == 'destroy' ]
-                        then
+                        elif [ "${ACTION}" = "destroy" ]; then
                             terraform destroy -auto-approve
                         fi
-                    """
+                    '''
                 }
             }
         }
     }
 
     post {
-        always{
+        always {
             echo "This sections runs always"
             deleteDir()
         }
-        success{
-            echo "This section run when pipeline success"
+        success {
+            echo "This section runs when pipeline succeeds"
         }
-        failure{
-            echo "This section run when pipeline failure"
+        failure {
+            echo "This section runs when pipeline fails"
         }
     }
 }
