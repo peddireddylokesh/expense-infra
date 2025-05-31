@@ -13,37 +13,65 @@ pipeline {
         choice(name: 'ACTION', choices: ['apply', 'destroy'], description: 'Select Action')
     }
 
+    environment {
+        AWS_REGION = 'us-east-1'
+        AWS_CREDS = 'aws-credentials'
+        APPLY_DIR = '70-ingress-alb'
+    }
+
     stages {
-        stage('Init and Plan') {
+        stage('Terraform Init and Plan') {
+            when {
+                expression { params.ACTION == 'apply' }
+            }
             steps {
-                withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
-                    sh '''
-                        cd 70-ingress-alb
-                        terraform init -reconfigure
-                        terraform plan -out=tfplan
-                    '''
+                withAWS(region: "${env.AWS_REGION}", credentials: "${env.AWS_CREDS}") {
+                    dir("${env.APPLY_DIR}") {
+                        sh '''
+                            echo "🔧 Running terraform init and plan"
+                            terraform init -reconfigure
+                            terraform plan -out=tfplan
+                        '''
+                    }
                 }
             }
         }
 
         stage('Apply or Destroy') {
-            // Uncomment below block if you want manual approval before proceeding
-            /*
-            input {
-                message "Should we continue to ${params.ACTION}?"
-                ok "Yes, proceed"
-            }
-            */
             steps {
-                withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
-                    sh '''
-                        cd 70-ingress-alb
-                        if [ "${ACTION}" = "apply" ]; then
-                            terraform apply -auto-approve tfplan
-                        elif [ "${ACTION}" = "destroy" ]; then
-                            terraform destroy -auto-approve
-                        fi
-                    '''
+                withAWS(region: "${env.AWS_REGION}", credentials: "${env.AWS_CREDS}") {
+                    script {
+                        if (params.ACTION == 'apply') {
+                            echo "🚀 Applying Terraform Plan..."
+                            dir("${env.APPLY_DIR}") {
+                                sh '''
+                                    if [ -f tfplan ]; then
+                                        terraform apply -auto-approve tfplan
+                                    else
+                                        echo "❌ Plan file not found. Run 'Init and Plan' stage first."
+                                        exit 1
+                                    fi
+                                '''
+                            }
+                        } else if (params.ACTION == 'destroy') {
+                            echo "⚠️ Starting destruction of all Terraform modules..."
+
+                            def directories = [ '70-ingress-alb','60-acm', '50-ecr', '40-eks', '40-rds', '20-bastion', '10-sg', '00-vpc']
+
+                            for (dirName in directories) {
+                                echo "🔻 Destroying resources in directory: ${dirName}"
+                                try {
+                                    dir(dirName) {
+                                        sh 'terraform init -reconfigure'
+                                        sh 'terraform destroy -auto-approve'
+                                    }
+                                } catch (err) {
+                                    echo "❌ Failed to destroy resources in ${dirName}: ${err}"
+                                    error("Stopping pipeline due to failure in ${dirName}")
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -51,14 +79,14 @@ pipeline {
 
     post {
         always {
-            echo "This sections runs always"
+            echo "📦 Cleaning workspace..."
             deleteDir()
         }
         success {
-            echo "This section runs when pipeline succeeds"
+            echo "✅ Pipeline completed successfully."
         }
         failure {
-            echo "This section runs when pipeline fails"
+            echo "❌ Pipeline failed. Please check logs."
         }
     }
 }
