@@ -56,7 +56,7 @@ pipeline {
                         } else if (params.ACTION == 'destroy') {
                             echo "⚠️ Starting destruction of all Terraform modules..."
 
-                            def directories = [ '70-ingress-alb','60-acm', '50-ecr', '40-eks', '40-rds', '20-bastion', '10-sg', '00-vpc']
+                            def directories = [ '70-ingress-alb','60-acm', '50-ecr', '40-rds', '40-eks', '20-bastion', '10-sg', '00-vpc']
 
                             for (dirName in directories) {
                                 echo "🔻 Destroying resources in directory: ${dirName}"
