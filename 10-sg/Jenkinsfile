@@ -35,7 +35,7 @@ pipeline {
             } 
         } 
         
-        stage('Parallel In Sequential') {
+        stage('Parallel-1') {
             when {
                 expression { params.ACTION == 'apply' }
             }
@@ -45,14 +45,14 @@ pipeline {
                         build job: '20-bastion', parameters: [string(name: 'ACTION', value: "apply")], wait: false
                     }
                 }
-                 stage('40-rds') {
+                 stage('40-eks') {
                     steps {
-                        build job: '40-rds', parameters: [string(name: 'ACTION', value: 'apply')], wait: false
+                        build job: '40-eks', parameters: [string(name: 'ACTION', value: 'apply')], wait: false
                     }
                 }
-                stage('40-eks') {
+                stage('40-rds') {
                     steps {
-                        build job: '40-eks', parameters: [string(name: 'ACTION', value: "apply")], wait: false
+                        build job: '40-rds', parameters: [string(name: 'ACTION', value: "apply")], wait: false
                     }
                 }
                 stage('50-ecr') {
@@ -65,9 +65,21 @@ pipeline {
                         build job: '60-acm', parameters: [string(name: 'ACTION', value: "apply")], wait: false
                     }
                 }
-                stage('70-ingress-alb') {
+               
+            }
+        stage('Parallel-2') {
+            when {
+                expression { params.ACTION == 'apply' }
+            }
+            parallel {
+                 stage('70-ingress-alb') {
                     steps {
                         build job: '70-ingress-alb', parameters: [string(name: 'ACTION', value: "apply")], wait: false
+                    }
+                }
+                stage('80-cdn') {
+                    steps {
+                        build job: '80-cdn', parameters: [string(name: 'ACTION', value: "apply")], wait: false
                     }
                 }
             }
