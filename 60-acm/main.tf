@@ -1,5 +1,5 @@
 resource "aws_acm_certificate" "expense" {
-  domain_name       = "*.${var.domain_name}"
+  domain_name       = "*.${var.domain_name}" # *.lokeshportfo.site
   validation_method = "DNS"
 
   tags = merge(
