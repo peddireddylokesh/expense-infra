@@ -67,6 +67,7 @@ pipeline {
                 }
                
             }
+        }
         stage('Parallel-2') {
             when {
                 expression { params.ACTION == 'apply' }
