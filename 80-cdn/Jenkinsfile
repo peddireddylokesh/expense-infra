@@ -18,10 +18,14 @@ pipeline {
     }
 
     stages {
+
+        // ✅ Put this at the top
         stage('Cert Setup') {
             steps {
-                dir("${env.DIR}") {
-                    sh 'chmod +x cert.sh && ./cert.sh'
+                withAWS(region: "${env.AWS_REGION}", credentials: "${env.AWS_CREDS}") {
+                    dir("${env.DIR}") {
+                        sh 'chmod +x cert.sh && ./cert.sh'
+                    }
                 }
             }
         }
@@ -31,7 +35,10 @@ pipeline {
             steps {
                 withAWS(region: "${env.AWS_REGION}", credentials: "${env.AWS_CREDS}") {
                     dir("${env.DIR}") {
-                        sh 'terraform init -reconfigure && terraform plan -out=tfplan'
+                        sh '''
+                            terraform init -reconfigure
+                            terraform plan -out=tfplan
+                        '''
                     }
                 }
             }
