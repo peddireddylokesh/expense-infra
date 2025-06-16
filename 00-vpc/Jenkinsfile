@@ -25,23 +25,23 @@ pipeline {
         }
     
         stage('Apply or Destroy') {
-            input {
-                message "Do you want to ${params.ACTION} the infrastructure?"
-                ok 'Yes,We are ready to go!'
-            }
+            // input {
+            //     message "Do you want to ${params.ACTION} the infrastructure?"
+            //     ok 'Yes,We are ready to go!'
+            // }
           
             steps {
                 withAWS(region: 'us-east-1', credentials: 'aws-credentials') {                 
-                        sh """
-                            cd 00-vpc
-                           if [ ${params.ACTION} == 'apply' ]; 
-                           then
-                                terraform apply -auto-approve tfplan
-                            elif [ ${params.ACTION} == 'destroy' ];
-                            then
-                                terraform destroy -auto-approve
-                            fi
-                        """
+                    sh """
+                        cd 00-vpc
+                        if [ ${params.ACTION} == 'apply' ]; 
+                        then
+                            terraform apply -auto-approve tfplan
+                        elif [ ${params.ACTION} == 'destroy' ];
+                        then
+                            terraform destroy -auto-approve
+                        fi
+                    """
                     
                 }
             } 
