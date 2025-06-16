@@ -1,92 +1,70 @@
 pipeline {
-    agent {
-        label 'AGENT-1'
-    }
-    options {
-        timeout(time: 30, unit: 'MINUTES')
-        disableConcurrentBuilds()
-        ansiColor('xterm')
-    }
+    agent { label 'AGENT-1' }
+
     parameters {
-    
-        choice(name: 'ACTION', choices: ['apply', 'destroy'], description: 'select terraform action')
+        choice(name: 'ACTION', choices: ['apply', 'destroy'], description: 'Select Terraform action')
+        string(name: 'APPLY_DIR', defaultValue: '80-cdn', description: 'Directory to run terraform apply')
     }
+
     environment {
         AWS_REGION = 'us-east-1'
-        AWS_CREDS = 'aws-credentials'
-        APPLY_DIR = '80-cdn'
+        DESTROY_MODULES = '70-ingress-alb,60-acm,50-ecr,40-rds,40-eks,20-bastion,10-sg,00-vpc'
     }
-    stages {                               
+
+    stages {
         stage('Init and Plan') {
             when {
                 expression { params.ACTION == 'apply' }
             }
-             steps {
-                withAWS(region: "${env.AWS_REGION}", credentials: "${env.AWS_CREDS}")  {
-                    dir("${env.APPLY_DIR}") {
-                        sh '''
-                            echo "🔧 Running terraform init and plan"
-                            terraform init -reconfigure
-                            terraform plan -out=tfplan
-                        '''
+            steps {
+                dir("${params.APPLY_DIR}") {
+                    withAWS(region: "${env.AWS_REGION}", credentials: 'aws') {
+                        sh 'terraform init -reconfigure'
+                        sh 'terraform validate'
+                        sh 'terraform plan -out=tfplan'
                     }
                 }
-            } 
+            }
         }
-    
+
         stage('Apply or Destroy') {
             steps {
-                withAWS(region: "${env.AWS_REGION}", credentials: "${env.AWS_CREDS}") {
-                    script {
-                        if (params.ACTION == 'apply') {
-                            echo "🚀 Applying Terraform Plan..."
-                            dir("${env.APPLY_DIR}") {
-                                sh '''
-                                    if [ -f tfplan ]; then
-                                        terraform apply -auto-approve tfplan
-                                    else
-                                        echo "❌ Plan file not found. Run 'Init and Plan' stage first."
-                                        exit 1
-                                    fi
-                                '''
+                script {
+                    if (params.ACTION == 'apply') {
+                        dir("${params.APPLY_DIR}") {
+                            withAWS(region: "${env.AWS_REGION}", credentials: 'aws') {
+                                sh 'terraform apply -auto-approve tfplan'
                             }
-                        } else if (params.ACTION == 'destroy') {
-                            echo "⚠️ Starting destruction of all Terraform modules..."
-                            def directories = ['70-ingress-alb', '60-acm', '50-ecr', '40-rds', '40-eks', '20-bastion', '10-sg', '00-vpc']
-                            for (dirName in directories) {
-                                echo "🔻 Destroying resources in directory: ${dirName}"
-                                try {
-                                    dir(dirName) {
-                                        sh 'terraform init -reconfigure'
-                                        sh 'terraform destroy -auto-approve'
-                                    }
-                                } catch (err) {
-                                    echo "❌ Failed to destroy resources in ${dirName}: ${err}"
-                                    error("Stopping pipeline due to failure in ${dirName}")
+                        }
+                    } else if (params.ACTION == 'destroy') {
+                        def modules = env.DESTROY_MODULES.split(',')
+
+                        for (module in modules) {
+                            dir("${module}") {
+                                echo "Destroying module: ${module}"
+                                withAWS(region: "${env.AWS_REGION}", credentials: 'aws') {
+                                    sh 'terraform init -reconfigure'
+                                    sh 'terraform destroy -auto-approve'
                                 }
                             }
                         }
                     }
                 }
             }
-        } 
-        
+        }
     }
-       
 
     post {
         always {
-            echo 'This will always run'     
-            deleteDir()
+            cleanWs()
         }
+
         success {
-            echo 'This will run only if the pipeline is successful'
+            echo "Terraform ${params.ACTION} completed successfully."
         }
+
         failure {
-            echo 'This will run only if the pipeline fails'
-        }
-        unstable {
-            echo 'This will run only if the pipeline is unstable'
+            echo "Terraform ${params.ACTION} failed. Check the logs for more details."
         }
     }
 }
