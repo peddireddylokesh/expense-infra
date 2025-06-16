@@ -16,9 +16,9 @@ pipeline {
              steps {
                 withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
                     sh '''
-                    cd 10-sg
-                    terraform init -reconfigure
-                    terraform plan -out=tfplan
+                        cd 10-sg
+                        terraform init -reconfigure
+                        terraform plan -out=tfplan
                     '''
                 }
             } 
@@ -43,6 +43,7 @@ pipeline {
                     """
                 }
             }
+        }    
         stage ('Destroy VPC') {
             when {
                 expression { params.ACTION == 'destroy' }
@@ -62,7 +63,7 @@ pipeline {
                         build job: '20-bastion', parameters: [string(name: 'ACTION', value: "apply")], wait: false
                     }
                 }
-                 stage('40-rds') {
+                stage('40-rds') {
                     steps {
                         build job: '40-rds', parameters: [string(name: 'ACTION', value: 'apply')], wait: false
                     }
@@ -90,7 +91,7 @@ pipeline {
                         build job: '60-acm', parameters: [string(name: 'ACTION', value: "apply")], wait: false
                     }
                 }
-                 stage('70-ingress-alb') {
+                stage('70-ingress-alb') {
                     steps {
                         build job: '70-ingress-alb', parameters: [string(name: 'ACTION', value: "apply")], wait: false
                     }
