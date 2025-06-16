@@ -39,47 +39,17 @@ pipeline {
             steps {
                 withAWS(region: "${env.AWS_REGION}", credentials: 'aws-credentials') {
                     dir('20-bastion') {
-                        sh '''
-                        if [ "${ACTION}" = "apply" ]; then
+                        sh """
+                        if [ ${params.ACTION} = 'apply' ]; then
                             terraform apply -auto-approve tfplan
-                        elif [ "${ACTION}" = "destroy" ]; then
+                        elif [ ${params.ACTION} = 'destroy' ]; then
                             terraform destroy -auto-approve
                         fi
-                        '''
+                        """
                     }
                 }
             }
         }
-
-        stage('Destroy VPC') {
-            when {
-                expression { params.ACTION == 'destroy' }
-            }
-            steps {
-                build job: '00-vpc', parameters: [string(name: 'ACTION', value: 'destroy')], wait: false
-            }
-        }
-
-        // Uncomment below block to build dependent jobs in parallel during apply
-        /*
-        stage('Provision Dependent Resources') {
-            when {
-                expression { params.ACTION == 'apply' }
-            }
-            parallel {
-                stage('Bastion') {
-                    steps {
-                        build job: '20-bastion', parameters: [string(name: 'ACTION', value: 'apply')], wait: false
-                    }
-                }
-                stage('EKS') {
-                    steps {
-                        build job: '40-eks', parameters: [string(name: 'ACTION', value: 'apply')], wait: false
-                    }
-                }
-            }
-        }
-        */
     }
 
     post {

@@ -31,25 +31,13 @@ pipeline {
                 withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
                     sh """
                         cd 40-rds
-                        if [ "${ACTION}" = "apply" ]; then
+                        if [ "${params.ACTION}" = "apply" ]; then
                             terraform apply -auto-approve tfplan
-                        elif [ "${ACTION}" = "destroy" ]; then
+                        elif [ "${params.ACTION}" = "destroy" ]; then
                             terraform destroy -auto-approve
                         fi
                     """
                 }
-            }
-        }
-
-        stage('Destroy Session Cleanup') {
-            when {
-                expression { params.ACTION == 'destroy' }
-            }
-            steps {
-                echo 'Performing additional destroy cleanup steps...'
-                // Add any extra cleanup logic here if needed
-                // Example:
-                // sh 'rm -rf ~/.terraform.d'
             }
         }
     }

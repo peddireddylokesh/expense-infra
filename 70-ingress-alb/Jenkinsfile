@@ -16,9 +16,9 @@ pipeline {
              steps {
                 withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
                     sh '''
-                    cd 70-ingress-alb
-                    terraform init -reconfigure
-                    terraform plan -out=tfplan
+                        cd 70-ingress-alb
+                        terraform init -reconfigure
+                        terraform plan -out=tfplan
                     '''
                 }
             } 
