@@ -1,13 +1,11 @@
 module "alb" {
-  source = "terraform-aws-modules/alb/aws"
-  internal = false
-
-  name    = "${var.project_name}-${var.environment}-ingress-alb"
-  vpc_id  = data.aws_ssm_parameter.vpc_id.value
-  subnets = local.public_subnet_ids
-
-  create_security_group = false
-  security_groups       = [local.alb_ingress_sg_id]
+  source                  = "terraform-aws-modules/alb/aws"
+  name                    = "${var.project_name}-${var.environment}-ingress-alb"
+  vpc_id                  = local.vpc_id
+  subnets                 = local.public_subnet_ids
+  internal                = false
+  create_security_group   = false
+  security_groups         = [local.alb_ingress_sg_id]
   enable_deletion_protection = false
 
   tags = merge(
@@ -33,18 +31,6 @@ resource "aws_lb_listener" "https" {
       message_body = "<h1>Hello, I am from front_end web ALB with HTTPS</h1>"
       status_code  = "200"
     }
-  }
-}
-
-resource "aws_route53_record" "web_alb" {
-  zone_id = var.zone_id
-  name    = "expense-${var.environment}.${var.domain_name}"
-  type    = "A"
-
-  alias {
-    name                   = module.alb.dns_name
-    zone_id                = module.alb.zone_id
-    evaluate_target_health = false
   }
 }
 
@@ -81,5 +67,17 @@ resource "aws_lb_listener_rule" "frontend" {
     host_header {
       values = ["expense-${var.environment}.${var.domain_name}"]
     }
+  }
+}
+
+resource "aws_route53_record" "web_alb" {
+  zone_id = var.zone_id
+  name    = "expense-${var.environment}.${var.domain_name}"
+  type    = "A"
+
+  alias {
+    name                   = module.alb.dns_name
+    zone_id                = module.alb.zone_id
+    evaluate_target_health = false
   }
 }

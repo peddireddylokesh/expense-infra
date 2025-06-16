@@ -2,63 +2,62 @@ pipeline {
     agent {
         label 'AGENT-1'
     }
+
     options {
         timeout(time: 40, unit: 'MINUTES')
         disableConcurrentBuilds()
         ansiColor('xterm')
     }
+
     parameters {
-    
-        choice(name: 'ACTION', choices: ['apply', 'destroy'], description: 'select terraform action')
+        choice(name: 'ACTION', choices: ['apply', 'destroy'], description: 'Select Terraform action')
     }
-    stages {                               
+
+    stages {
         stage('Init and Plan') {
-             steps {
-                withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
-                    sh '''
-                        cd 70-ingress-alb
-                        terraform init -reconfigure
-                        terraform plan -out=tfplan
-                    '''
-                }
-            } 
-        }
-    
-        stage('Apply') {
-           
+            when { expression { params.ACTION == 'apply' } }
             steps {
-                withAWS(region: 'us-east-1', credentials: 'aws-credentials') {                 
-                    sh """
-                        cd 70-ingress-alb
-                        if [ ${params.ACTION} == 'apply' ]; 
-                        then
-                            terraform apply -auto-approve tfplan
-                        elif [ ${params.ACTION} == 'destroy' ];
-                        then
-                            terraform destroy -auto-approve
-                        fi
-                    """
-                    
+                withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
+                    dir('70-ingress-alb') {
+                        sh '''
+                            terraform init -reconfigure
+                            terraform plan -out=tfplan
+                        '''
+                    }
                 }
-            } 
-        } 
-        
+            }
+        }
+
+        stage('Apply or Destroy') {
+            steps {
+                withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
+                    dir('70-ingress-alb') {
+                        sh '''
+                            if [ "${ACTION}" = "apply" ]; then
+                                terraform apply -auto-approve tfplan
+                            elif [ "${ACTION}" = "destroy" ]; then
+                                terraform destroy -auto-approve
+                            fi
+                        '''
+                    }
+                }
+            }
+        }
     }
-       
 
     post {
         always {
-            echo 'This will always run'     
+            echo 'Cleaning up workspace...'
             deleteDir()
         }
         success {
-            echo 'This will run only if the pipeline is successful'
+            echo '✅ Pipeline completed successfully.'
         }
         failure {
-            echo 'This will run only if the pipeline fails'
+            echo '❌ Pipeline failed.'
         }
         unstable {
-            echo 'This will run only if the pipeline is unstable'
+            echo '⚠️ Pipeline was unstable.'
         }
     }
 }
