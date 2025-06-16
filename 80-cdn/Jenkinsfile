@@ -2,91 +2,110 @@ pipeline {
     agent {
         label 'AGENT-1'
     }
+
     options {
         timeout(time: 30, unit: 'MINUTES')
         disableConcurrentBuilds()
         ansiColor('xterm')
     }
+
     parameters {
-    
-        choice(name: 'ACTION', choices: ['apply', 'destroy'], description: 'select terraform action')
+        choice(name: 'ACTION', choices: ['apply', 'destroy'], description: 'Select Terraform action')
     }
+
     environment {
         AWS_REGION = 'us-east-1'
         AWS_CREDS = 'aws-credentials'
-        APPLY_DIR = '80-cdn'
+        DIR = '80-cdn'
     }
-    stages {                               
+
+    stages {
+
         stage('Init and Plan') {
             when {
                 expression { params.ACTION == 'apply' }
             }
-             steps {
-                withAWS(region: "${env.AWS_REGION}", credentials: "${env.AWS_CREDS}")  {
-                    dir("${env.APPLY_DIR}") {
+            steps {
+                withAWS(region: "${env.AWS_REGION}", credentials: "${env.AWS_CREDS}") {
+                    dir("${env.DIR}") {
                         sh '''
-                            echo "🔧 Running terraform init and plan"
-                            terraform init -reconfigure
-                            terraform plan -out=tfplan
+                        terraform init -reconfigure
+                        terraform plan -out=tfplan
                         '''
                     }
                 }
-            } 
+            }
         }
-    
-        stage('Apply or Destroy') {
+
+        stage('Apply') {
+            when {
+                expression { params.ACTION == 'apply' }
+            }
             steps {
                 withAWS(region: "${env.AWS_REGION}", credentials: "${env.AWS_CREDS}") {
-                    script {
-                        if (params.ACTION == 'apply') {
-                            echo "🚀 Applying Terraform Plan..."
-                            dir("${env.APPLY_DIR}") {
-                                sh '''
-                                    if [ -f tfplan ]; then
-                                        terraform apply -auto-approve tfplan
-                                    else
-                                        echo "❌ Plan file not found. Run 'Init and Plan' stage first."
-                                        exit 1
-                                    fi
-                                '''
-                            }
-                        } else if (params.ACTION == 'destroy') {
-                            echo "⚠️ Starting destruction of all Terraform modules..."
-                            def directories = ['70-ingress-alb', '60-acm', '50-ecr', '40-rds', '40-eks', '20-bastion', '10-sg', '00-vpc']
-                            for (dirName in directories) {
-                                echo "🔻 Destroying resources in directory: ${dirName}"
-                                try {
-                                    dir(dirName) {
-                                        sh 'terraform init -reconfigure'
-                                        sh 'terraform destroy -auto-approve'
-                                    }
-                                } catch (err) {
-                                    echo "❌ Failed to destroy resources in ${dirName}: ${err}"
-                                    error("Stopping pipeline due to failure in ${dirName}")
-                                }
-                            }
-                        }
+                    dir("${env.DIR}") {
+                        sh '''
+                        terraform apply -auto-approve tfplan
+                        '''
                     }
                 }
             }
-        } 
-        
+        }
+
+        stage('Destroy Self (CDN)') {
+            when {
+                expression { params.ACTION == 'destroy' }
+            }
+            steps {
+                withAWS(region: "${env.AWS_REGION}", credentials: "${env.AWS_CREDS}") {
+                    dir("${env.DIR}") {
+                        sh '''
+                        terraform init -reconfigure
+                        terraform destroy -auto-approve
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Destroy Dependencies') {
+            when {
+                expression { params.ACTION == 'destroy' }
+            }
+            steps {
+                echo 'Triggering destroy in reverse dependency order...'
+                script {
+                    def jobs = [
+                        '70-ingress-alb',
+                        '60-acm',
+                        '50-ecr',
+                        '40-rds',
+                        '40-eks',
+                        '20-bastion',
+                        '10-sg',
+                        '00-vpc'
+                    ]
+                    for (job in jobs) {
+                        build job: job, parameters: [string(name: 'ACTION', value: 'destroy')], wait: true
+                    }
+                }
+            }
+        }
     }
-       
 
     post {
         always {
-            echo 'This will always run'     
+            echo 'Cleaning workspace...'
             deleteDir()
         }
         success {
-            echo 'This will run only if the pipeline is successful'
+            echo '✅ Pipeline completed successfully.'
         }
         failure {
-            echo 'This will run only if the pipeline fails'
+            echo '❌ Pipeline failed.'
         }
         unstable {
-            echo 'This will run only if the pipeline is unstable'
+            echo '⚠️ Pipeline is unstable.'
         }
     }
 }
