@@ -8,20 +8,21 @@ pipeline {
         ansiColor('xterm')
     }
     parameters {
-        choice(name: 'ACTION', choices: ['apply', 'destroy'], description: 'Select Terraform action')
+    
+        choice(name: 'ACTION', choices: ['apply', 'destroy'], description: 'select terraform action')
     }
     environment {
         AWS_REGION = 'us-east-1'
         AWS_CREDS = 'aws-credentials'
         APPLY_DIR = '80-cdn'
     }
-    stages {
+    stages {                               
         stage('Init and Plan') {
             when {
                 expression { params.ACTION == 'apply' }
             }
-            steps {
-                withAWS(region: "${env.AWS_REGION}", credentials: "${env.AWS_CREDS}") {
+             steps {
+                withAWS(region: "${env.AWS_REGION}", credentials: "${env.AWS_CREDS}")  {
                     dir("${env.APPLY_DIR}") {
                         sh '''
                             echo "🔧 Running terraform init and plan"
@@ -30,9 +31,9 @@ pipeline {
                         '''
                     }
                 }
-            }
+            } 
         }
-
+    
         stage('Apply or Destroy') {
             steps {
                 withAWS(region: "${env.AWS_REGION}", credentials: "${env.AWS_CREDS}") {
@@ -55,16 +56,9 @@ pipeline {
                             for (dirName in directories) {
                                 echo "🔻 Destroying resources in directory: ${dirName}"
                                 try {
-                                    if (fileExists("${dirName}/main.tf")) {
-                                        dir("${dirName}") {
-                                            sh '''
-                                                terraform init -reconfigure
-                                                terraform destroy -auto-approve
-                                                rm -rf .terraform terraform.tfstate terraform.tfstate.backup
-                                            '''
-                                        }
-                                    } else {
-                                        echo "⚠️ Skipping ${dirName}: main.tf not found"
+                                    dir(dirName) {
+                                        sh 'terraform init -reconfigure'
+                                        sh 'terraform destroy -auto-approve'
                                     }
                                 } catch (err) {
                                     echo "❌ Failed to destroy resources in ${dirName}: ${err}"
@@ -75,22 +69,24 @@ pipeline {
                     }
                 }
             }
-        }
+        } 
+        
     }
+       
 
     post {
         always {
-            echo '🧹 Cleanup: Always runs'
-            deleteDir() // cleans the workspace
+            echo 'This will always run'     
+            deleteDir()
         }
         success {
-            echo '✅ Pipeline completed successfully'
+            echo 'This will run only if the pipeline is successful'
         }
         failure {
-            echo '❌ Pipeline failed'
+            echo 'This will run only if the pipeline fails'
         }
         unstable {
-            echo '⚠️ Pipeline is unstable'
+            echo 'This will run only if the pipeline is unstable'
         }
     }
 }
