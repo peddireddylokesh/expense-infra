@@ -86,7 +86,12 @@ pipeline {
                         '00-vpc'
                     ]
                     for (job in jobs) {
-                        build job: job, parameters: [string(name: 'ACTION', value: 'destroy')], wait: true
+                        catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                            echo "⛔ Triggering destroy for: ${job}"
+                            build job: job,
+                                  parameters: [string(name: 'ACTION', value: 'destroy')],
+                                  wait: true
+                        }
                     }
                 }
             }
