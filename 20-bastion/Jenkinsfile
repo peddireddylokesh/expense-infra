@@ -4,7 +4,7 @@ pipeline {
     }
 
     options {
-        timeout(time: 30, unit: 'MINUTES')
+        timeout(time: 40, unit: 'MINUTES')
         disableConcurrentBuilds()
         ansiColor('xterm')
     }
@@ -32,10 +32,10 @@ pipeline {
         }
 
         stage('Apply or Destroy') {
-            input {
-                message "Do you want to ${params.ACTION} the infrastructure?"
-                ok 'Yes'
-            }
+            // input {
+            //     message "Do you want to ${params.ACTION} the infrastructure?"
+            //     ok 'Yes'
+            // }
             steps {
                 withAWS(region: "${env.AWS_REGION}", credentials: 'aws-credentials') {
                     dir('20-bastion') {
