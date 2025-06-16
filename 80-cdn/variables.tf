@@ -1,23 +1,23 @@
 variable "project_name" {
-    default = "expense"
+  default = "expense"
 }
 
 variable "environment" {
-    default = "dev"
+  default = "dev"
 }
 
 variable "common_tags" {
-    default = {
-        Project = "expense"
-        Environment = "dev"
-        Terraform = "true"
-    }
+  default = {
+    Project     = "expense"
+    Environment = "dev"
+    Terraform   = "true"
+  }
 }
 
 variable "domain_name" {
-    default = "lokeshportfo.site"
+  default = "lokeshportfo.site"
 }
 
 variable "zone_id" {
-    default = "Z00188163RC0DY3NOAH3R"
+  default = "Z00188163RC0DY3NOAH3R"
 }

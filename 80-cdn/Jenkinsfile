@@ -1,7 +1,5 @@
 pipeline {
-    agent {
-        label 'AGENT-1'
-    }
+    agent { label 'AGENT-1' }
 
     options {
         timeout(time: 40, unit: 'MINUTES')
@@ -15,83 +13,52 @@ pipeline {
 
     environment {
         AWS_REGION = 'us-east-1'
-        AWS_CREDS = 'aws-credentials'
-        DIR = '80-cdn'
+        AWS_CREDS  = 'aws-credentials'
+        DIR        = '80-cdn'
     }
 
     stages {
+        stage('Cert Setup') {
+            steps {
+                dir("${env.DIR}") {
+                    sh 'chmod +x cert.sh && ./cert.sh'
+                }
+            }
+        }
 
         stage('Init and Plan') {
-            when {
-                expression { params.ACTION == 'apply' }
-            }
+            when { expression { params.ACTION == 'apply' } }
             steps {
                 withAWS(region: "${env.AWS_REGION}", credentials: "${env.AWS_CREDS}") {
                     dir("${env.DIR}") {
-                        sh '''
-                            terraform init -reconfigure
-                            terraform plan -out=tfplan
-                        '''
+                        sh 'terraform init -reconfigure && terraform plan -out=tfplan'
                     }
                 }
             }
         }
 
         stage('Apply') {
-            when {
-                expression { params.ACTION == 'apply' }
-            }
+            when { expression { params.ACTION == 'apply' } }
             steps {
                 withAWS(region: "${env.AWS_REGION}", credentials: "${env.AWS_CREDS}") {
                     dir("${env.DIR}") {
-                        sh '''
-                            terraform apply -auto-approve tfplan
-                        '''
+                        sh 'terraform apply -auto-approve tfplan'
                     }
                 }
             }
         }
 
-        // stage('Destroy Self (CDN)') {
-        //     when {
-        //         expression { params.ACTION == 'destroy' }
-        //     }
-        //     steps {
-        //         withAWS(region: "${env.AWS_REGION}", credentials: "${env.AWS_CREDS}") {
-        //             dir("${env.DIR}") {
-        //                 sh '''
-        //                 terraform init -reconfigure
-        //                 terraform destroy -auto-approve
-        //                 '''
-        //             }
-        //         }
-        //     }
-        // }
-
         stage('Destroy Dependencies') {
-            when {
-                expression { params.ACTION == 'destroy' }
-            }
+            when { expression { params.ACTION == 'destroy' } }
             steps {
-                echo 'Triggering destroy in reverse dependency order...'
                 script {
-                    def directories = [
-                        '80-cdn',
-                        '50-ecr',
-                        '70-ingress-alb',
-                        '60-acm',
-                        '40-eks',
-                        '40-rds',
-                        '20-bastion',
-                        '10-sg',
-                        '00-vpc'
-                    ]
+                    def directories = ['80-cdn', '50-ecr', '70-ingress-alb', '60-acm', '40-eks', '40-rds', '20-bastion', '10-sg', '00-vpc']
                     for (dir in directories) {
-                        echo "Destroying resources in directory: ${dir}"
+                        echo "Destroying ${dir}..."
                         sh """
                             cd ${dir}
                             terraform init -reconfigure
-                            terraform destroy -auto-approve || { echo "Failed to destroy resources in ${dir}"; exit 1; }
+                            terraform destroy -auto-approve || { echo '⚠️ Failed in ${dir}'; exit 1; }
                             cd ..
                         """
                     }
@@ -102,17 +69,14 @@ pipeline {
 
     post {
         always {
-            echo 'Cleaning workspace...'
+            echo '🧹 Cleaning workspace...'
             deleteDir()
         }
         success {
-            echo '✅ Pipeline completed successfully.'
+            echo '✅ Pipeline successful.'
         }
         failure {
             echo '❌ Pipeline failed.'
-        }
-        unstable {
-            echo '⚠️ Pipeline is unstable.'
         }
     }
 }

@@ -12,7 +12,6 @@ resource "aws_cloudfront_distribution" "expense" {
   }
 
   enabled = true
-
   aliases = ["${var.project_name}-cdn.${var.domain_name}"]
 
   default_cache_behavior {
