@@ -21,6 +21,7 @@ pipeline {
                     dir('60-ingress-alb') {
                         sh '''
                             terraform init -reconfigure
+                            terraform init -upgrade
                             terraform plan -out=tfplan
                         '''
                     }
