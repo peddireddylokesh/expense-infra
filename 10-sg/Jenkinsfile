@@ -63,9 +63,9 @@ pipeline {
                         build job: '20-bastion', parameters: [string(name: 'ACTION', value: "apply")], wait: false
                     }
                 }
-                stage('40-rds') {
+                stage('30-rds') {
                     steps {
-                        build job: '40-rds', parameters: [string(name: 'ACTION', value: 'apply')], wait: false
+                        build job: '30-rds', parameters: [string(name: 'ACTION', value: 'apply')], wait: false
                     }
                 }
                 stage('40-eks') {
@@ -73,9 +73,9 @@ pipeline {
                         build job: '40-eks', parameters: [string(name: 'ACTION', value: "apply")], wait: false
                     }
                 }
-                stage('50-ecr') {
+                stage('70-ecr') {
                     steps {
-                        build job: '50-ecr', parameters: [string(name: 'ACTION', value: "apply")], wait: false
+                        build job: '70-ecr', parameters: [string(name: 'ACTION', value: "apply")], wait: false
                     }
                 }
                
@@ -86,14 +86,14 @@ pipeline {
                 expression { params.ACTION == 'apply' }
             }
             stages {
-                stage('60-acm') {
+                stage('50-acm') {
                     steps {
-                        build job: '60-acm', parameters: [string(name: 'ACTION', value: "apply")], wait: false
+                        build job: '50-acm', parameters: [string(name: 'ACTION', value: "apply")]
                     }
                 }
-                stage('70-ingress-alb') {
+                stage('60-ingress-alb') {
                     steps {
-                        build job: '70-ingress-alb', parameters: [string(name: 'ACTION', value: "apply")], wait: false
+                        build job: '60-ingress-alb', parameters: [string(name: 'ACTION', value: "apply")], wait: false
                     }
                 }
                 stage('80-cdn') {

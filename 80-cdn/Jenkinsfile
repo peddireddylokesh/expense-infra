@@ -59,7 +59,7 @@ pipeline {
             when { expression { params.ACTION == 'destroy' } }
             steps {
                 script {
-                    def directories = ['80-cdn', '50-ecr', '70-ingress-alb', '60-acm', '40-eks', '40-rds', '20-bastion', '10-sg', '00-vpc']
+                    def directories = ['80-cdn', '70-ecr', '60-ingress-alb', '50-acm', '40-eks', '30-rds', '20-bastion', '10-sg', '00-vpc']
                     for (dir in directories) {
                         echo "Destroying ${dir}..."
                         withAWS(region: "${env.AWS_REGION}", credentials: "${env.AWS_CREDS}") {

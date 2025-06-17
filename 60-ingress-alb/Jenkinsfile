@@ -18,7 +18,7 @@ pipeline {
             when { expression { params.ACTION == 'apply' } }
             steps {
                 withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
-                    dir('70-ingress-alb') {
+                    dir('60-ingress-alb') {
                         sh '''
                             terraform init -reconfigure
                             terraform plan -out=tfplan
@@ -31,7 +31,7 @@ pipeline {
         stage('Apply or Destroy') {
             steps {
                 withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
-                    dir('70-ingress-alb') {
+                    dir('60-ingress-alb') {
                         sh '''
                             if [ "${ACTION}" = "apply" ]; then
                                 terraform apply -auto-approve tfplan
