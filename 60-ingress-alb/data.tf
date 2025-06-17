@@ -9,7 +9,7 @@ data "aws_ssm_parameter" "public_subnet_ids" {
 data "aws_ssm_parameter" "alb_ingress_sg_id" {
   name = "/${var.project_name}/${var.environment}/alb_ingress_sg_id"
 }
-data "aws_acm_certificate" "https_cert" {
+data "aws_acm_certificate" "https_certificate_arn" {
   domain      = "expense-dev.lokeshportfo.site"
   statuses    = ["ISSUED"]
   most_recent = true
