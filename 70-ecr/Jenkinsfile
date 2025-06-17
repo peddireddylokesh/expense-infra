@@ -11,38 +11,50 @@ pipeline {
     
         choice(name: 'ACTION', choices: ['apply', 'destroy'], description: 'select terraform action')
     }
-    stages {                               
+    environment {
+        TF_DIR = "${WORKSPACE}/70-ecr"
+    }
+    stages {
         stage('Init and Plan') {
-             steps {
-                withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
-                    sh '''
-                    cd 70-ecr
-                    terraform init -reconfigure
-                    terraform plan -out=tfplan
-                    '''
-                }
-            } 
-        }
-    
-        stage('Terraform Plan or Destroy') {
             steps {
                 withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
-                    sh '''
-                        cd 70-ecr
-                        if [ "${ACTION}" == "apply" ]; then
-                            terraform plan -out=tfplan
-                            terraform apply -auto-approve tfplan
-                        elif [ "${ACTION}" == "destroy" ]; then
-                            terraform destroy -auto-approve
-                        fi
-                    '''
+                    dir("${env.TF_DIR}") {
+                        sh '''
+                            echo "🔧 Running terraform init..."
+                            terraform init -reconfigure
+                        '''
+                    }
                 }
             }
+        }
+    
+        stage('Terraform Apply or Destroy') {
+            steps {
+                withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
+                    dir("${env.TF_DIR}") {
+                        script {
+                            if (params.ACTION == 'apply') {
+                                sh '''
+                                    echo "🚀 Running terraform plan & apply..."
+                                    terraform plan -out=tfplan
+                                    terraform apply -auto-approve tfplan
+                                '''
+                            } else if (params.ACTION == 'destroy') {
+                                sh '''
+                                    echo "🔥 Running terraform destroy..."
+                                    terraform destroy -auto-approve
+                                '''
+                            }
+                        }
+                    }
+                }
+            }
+        
         }
 
         stage('Show Terraform ECR Config') {
             steps {
-                sh 'cat 70-ecr/main.tf'
+                sh 'cat 70-ecr/main.tf || echo "main.tf not found"'
             }
         }
 
