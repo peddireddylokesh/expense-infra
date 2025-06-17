@@ -24,24 +24,22 @@ pipeline {
             } 
         }
     
-        stage('Apply') {
-           
+        stage('Terraform Plan or Destroy') {
             steps {
-                withAWS(region: 'us-east-1', credentials: 'aws-credentials') {                 
-                    sh """
+                withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
+                    sh '''
                         cd 70-ecr
-                        if [ "${params.ACTION}" == "apply" ]; 
-                        then
+                        if [ "${ACTION}" == "apply" ]; then
+                            terraform plan -out=tfplan
                             terraform apply -auto-approve tfplan
-                        elif [ ${params.ACTION} == 'destroy' ];
-                        then
+                        elif [ "${ACTION}" == "destroy" ]; then
                             terraform destroy -auto-approve
                         fi
-                    """
-                    
+                    '''
                 }
-            } 
+            }
         }
+
         stage('Show Terraform ECR Config') {
             steps {
                 sh 'cat 70-ecr/main.tf'
