@@ -15,4 +15,5 @@ resource "aws_ecr_repository" "frontend" {
   image_scanning_configuration {
     scan_on_push = true
   }
+  force_delete = true  # ✅ This allows deletion even if images exist
 }
