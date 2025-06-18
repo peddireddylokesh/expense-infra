@@ -14,44 +14,44 @@ pipeline {
     parameters {
         choice(name: 'ACTION', choices: ['apply', 'destroy'], description: 'Select Action')
     }
+
+    environment {
+        TF_DIR = "${WORKSPACE}/50-acm"
+    }
     stages {
-      
         stage('Init and Plan') {
             steps {
                 withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
-                    sh """
-                        cd 50-acm
-                        terraform init -reconfigure
-                        if [ "${params.ACTION}" = "destroy" ]; then
-                            terraform plan -destroy -out=tfplan
-                        else
-                            terraform plan -out=tfplan
-                        fi
-                    """
+                    dir("${env.TF_DIR}") {
+                        sh '''
+                            echo "🔧 Running terraform init..."
+                            terraform init -reconfigure
+                        '''
+                    }
                 }
             }
-
         }
 
         stage('Apply or Destroy') {
-            /* input {
-                message "Should we continue to ${params.ACTION}"
-                ok "Yes, we should."
-            } */
             steps {
                 withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
-                    sh """
-                        cd 50-acm
-                        terraform state list || echo "⚠️ No resources currently tracked in state"
-
-                        if [ ${params.ACTION} == 'apply' ]
-                        then
-                            terraform apply -auto-approve tfplan
-                        elif [ ${params.ACTION} == 'destroy' ]
-                        then
-                            terraform destroy -auto-approve
-                        fi
-                    """
+                    dir("${env.TF_DIR}") {
+                         script {
+                            if (params.ACTION == 'apply') {
+                                sh '''
+                                    echo "🚀 Running terraform plan & apply..."
+                                    terraform plan -out=tfplan
+                                    terraform apply -auto-approve tfplan
+                                '''
+                            } else if (params.ACTION == 'destroy') {
+                                sh '''
+                                    echo "🔥 Running terraform destroy..."
+                                    terraform destroy -auto-approve
+                                '''
+                            }
+                        }
+                    }
+                    
                 }
             }
         }
