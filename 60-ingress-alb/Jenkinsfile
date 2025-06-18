@@ -20,8 +20,9 @@ pipeline {
                 withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
                     dir('60-ingress-alb') {
                         sh '''
-                            terraform init -reconfigure -upgrade
-                            terraform plan -out=tfplan
+                            echo "🔧 Running terraform init..."
+                            terraform init -reconfigure 
+                            
                         '''
                     }
                 }
@@ -33,9 +34,10 @@ pipeline {
                 withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
                     dir('60-ingress-alb') {
                         sh '''
-                            if [ "${ACTION}" = "apply" ]; then
+                            if [ "${ACTION}" == "apply" ]; then
+                                terraform plan -out=tfplan
                                 terraform apply -auto-approve tfplan
-                            elif [ "${ACTION}" = "destroy" ]; then
+                            elif [ "${ACTION}" == "destroy" ]; then
                                 terraform destroy -auto-approve
                             fi
                         '''
