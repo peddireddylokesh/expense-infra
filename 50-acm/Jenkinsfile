@@ -36,6 +36,8 @@ pipeline {
                 withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
                     sh """
                         cd 50-acm
+                        terraform state list || echo "⚠️ No resources currently tracked in state"
+
                         if [ ${params.ACTION} == 'apply' ]
                         then
                             terraform apply -auto-approve tfplan
