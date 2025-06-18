@@ -14,30 +14,31 @@ pipeline {
     }
 
     stages {
-        stage('Init and Plan') {
-            when { expression { params.ACTION == 'apply' } }
+        stage('Init') {
             steps {
                 withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
                     dir('60-ingress-alb') {
                         sh '''
                             echo "🔧 Running terraform init..."
                             terraform init -reconfigure 
-                            
                         '''
                     }
                 }
             }
         }
 
-        stage('Apply or Destroy') {
+        stage('Plan and Apply/Destroy') {
             steps {
                 withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
                     dir('60-ingress-alb') {
                         sh '''
-                            if [ "${ACTION}" == "apply" ]; then
+                            if [ "${ACTION}" = "apply" ]; then
+                                echo "📝 Running terraform plan..."
                                 terraform plan -out=tfplan
+                                echo "🚀 Applying terraform changes..."
                                 terraform apply -auto-approve tfplan
-                            elif [ "${ACTION}" == "destroy" ]; then
+                            elif [ "${ACTION}" = "destroy" ]; then
+                                echo "💣 Destroying infrastructure..."
                                 terraform destroy -auto-approve
                             fi
                         '''
