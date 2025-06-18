@@ -15,16 +15,22 @@ pipeline {
         choice(name: 'ACTION', choices: ['apply', 'destroy'], description: 'Select Action')
     }
     stages {
+      
         stage('Init and Plan') {
             steps {
                 withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
                     sh """
                         cd 50-acm
                         terraform init -reconfigure
-                        terraform plan -out=tfplan
+                        if [ "${params.ACTION}" = "destroy" ]; then
+                            terraform plan -destroy -out=tfplan
+                        else
+                            terraform plan -out=tfplan
+                        fi
                     """
                 }
             }
+
         }
 
         stage('Apply or Destroy') {
