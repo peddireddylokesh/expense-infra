@@ -8,6 +8,9 @@ pipeline {
         disableConcurrentBuilds()
         ansiColor('xterm')
     }
+    environment {
+        ACTION = "${params.ACTION}"  // ✅ Make Jenkins parameter available in shell
+    }
 
     parameters {
         choice(name: 'ACTION', choices: ['apply', 'destroy'], description: 'Select Terraform action')
@@ -31,17 +34,17 @@ pipeline {
             steps {
                 withAWS(region: 'us-east-1', credentials: 'aws-credentials') {
                     dir('60-ingress-alb') {
-                        sh '''
-                            if [ "${ACTION}" = "apply" ]; then
+                        sh """
+                            if [ ${params.ACTION} = 'apply' ]; then
                                 echo "📝 Running terraform plan..."
                                 terraform plan -out=tfplan
                                 echo "🚀 Applying terraform changes..."
                                 terraform apply -auto-approve tfplan
-                            elif [ "${ACTION}" = "destroy" ]; then
+                            elif [ ${params.ACTION} = 'destroy' ]; then
                                 echo "💣 Destroying infrastructure..."
                                 terraform destroy -auto-approve
                             fi
-                        '''
+                        """
                     }
                 }
             }
