@@ -8,7 +8,7 @@ module "eks" {
   version = "~> 20.0"
 
   cluster_name    = local.name
-  cluster_version = "1.31" # later we upgrade 1.32
+  cluster_version = "1.32" # later we upgrade 1.32
   create_node_security_group = false
   create_cluster_security_group = false
   cluster_security_group_id = local.eks_control_plane_sg_id
