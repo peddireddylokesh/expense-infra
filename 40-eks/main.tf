@@ -24,7 +24,10 @@ module "eks" {
   }
 
   # Optional
-  cluster_endpoint_public_access = false
+  cluster_endpoint_public_access  = true
+  cluster_endpoint_private_access = true
+  cluster_endpoint_public_access_cidrs = ["0.0.0.0/0"]
+
 
   # Optional: Adds the current caller identity as an administrator via cluster access entry
   enable_cluster_creator_admin_permissions = true
